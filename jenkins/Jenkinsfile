@@ -8,9 +8,14 @@ pipeline {
     stages {
 
         stage('Build App') {
+            agent {
+                docker {
+                    image 'node:18'
+                }
+            }
             steps {
-                sh 'cd app && npm install'
-                sh 'cd app && npm run build'
+                sh 'npm install'
+                sh 'npm run build'
             }
         }
 
