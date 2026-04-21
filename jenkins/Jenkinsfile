@@ -1,28 +1,48 @@
-stages {
+pipeline {
+    agent any
 
-    stage('Build App') { ... }
-
-    stage('Build Docker Image') {
-        steps {
-            sh 'docker build -t jrishi904/jenkins-demo -f docker/Dockerfile .'
-        }
+    environment {
+        DOCKER_IMAGE = "jrishi904/jenkins-demo"
     }
 
-    stage('Docker Login') {
-        steps {
-            withCredentials([usernamePassword(
-                credentialsId: 'dockerhub-creds',
-                usernameVariable: 'DOCKER_USER',
-                passwordVariable: 'DOCKER_PASS'
-            )]) {
-                sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+    stages {
+
+        stage('Build App') {
+            agent {
+                docker {
+                    image 'node:18'
+                }
+            }
+            steps {
+                dir('app') {
+                    sh 'npm install'
+                    sh 'npm run build'
+                }
             }
         }
-    }
 
-    stage('Push Docker Image') {
-        steps {
-            sh 'docker push jrishi904/jenkins-demo'
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t $DOCKER_IMAGE -f docker/Dockerfile .'
+            }
+        }
+
+        stage('Docker Login') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                sh 'docker push $DOCKER_IMAGE'
+            }
         }
     }
 }
